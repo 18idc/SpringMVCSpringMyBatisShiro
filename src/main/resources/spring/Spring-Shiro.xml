@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+        <property name="exceptionMappings">
+            <props>
+                <prop key="org.apache.shiro.authz.UnauthorizedException">refuse</prop>
+            </props>
+        </property>
+    </bean>
+
+    <!--web.xml 中shiro的filter 对应的bean-->
+    <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+        <property name="securityManager" ref="securityManager" />
+        <!-- loginUrl认证提交地址，如果没有认证将会请求此地址进行认证，请求此地址将由formAuthenticationFilter进行表单认证 -->
+        <property name="loginUrl" value="/login/login.html" />
+        <!-- 认证成功统一跳转到first.action，建议不配置，shiro认证成功自动到上一个请求路径 -->
+        <property name="unauthorizedUrl" value="/refuse.jsp" />
+        <!-- 自定义filter配置 -->
+        <property name="filters">
+            <map>
+                <!-- 将自定义 的FormAuthenticationFilter注入shiroFilter中-->
+                <entry key="authc" value-ref="formAuthenticationFilter" />
+            </map>
+        </property>
+
+        <!-- 过虑器链定义，从上向下顺序执行，一般将/**放在最下边 -->
+        <property name="filterChainDefinitions">
+            <value>
+                <!-- 退出拦截，请求logout.action执行退出操作 -->
+                /login/logout.html = logout
+                <!-- 无权访问页面 可匿名访问的页面 -->
+                /refuse.jsp = anon
+                /druid/** = anon
+                /script/** = anon
+                <!--验证码-->
+                /login/code.jpg = anon
+                <!--配置记住我或认证通过可以访问的地址-->
+                /index.jsp = user
+                <!--需要认证的页面-->
+                /** = authc
+            </value>
+        </property>
+    </bean>
+
+    <!--redisManager-->
+    <bean id="redisManager" class="org.crazycake.shiro.RedisManager">
+        <property name="host" value="${host}:${port}"/>
+        <property name="database" value="${database}"/>
+    </bean>
+
+    <!--securityManager-->
+    <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+        <!--<property name="realm" ref="myRealm"/>-->
+        <!--配置自定义realm-->
+        <property name="realms">
+            <list>
+                <ref bean="myRealm"/>
+            </list>
+        </property>
+
+        <!-- 注入缓存管理器 -->
+        <property name="cacheManager" ref="cacheManager"/>
+
+        <!-- 注入session管理器 -->
+        <property name="sessionManager" ref="sessionManager" />
+
+        <!-- 记住我 -->
+        <property name="rememberMeManager" ref="rememberMeManager"/>
+
+    </bean>
+
+    <!-- 缓存管理器 -->
+    <!--<bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">-->
+        <!--<property name="cacheManagerConfigFile" value="classpath:shiro-ehcache.xml"/>-->
+    <!--</bean>-->
+    <bean id="cacheManager" class="org.crazycake.shiro.RedisCacheManager">
+        <property name="redisManager" ref="redisManager" />
+        <property name="expire" value="1800"/>
+        <property name="keyPrefix" value="shiro:cache:" />
+    </bean>
+
+    <!-- 会话管理器 -->
+    <bean id="sessionManager" class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager">
+        <property name="sessionDAO" ref="redisSessionDAO" />
+        <!-- 删除失效的session -->
+        <property name="deleteInvalidSessions" value="true"/>
+    </bean>
+
+    <!--redisSessionDAO-->
+    <bean id="redisSessionDAO" class="org.crazycake.shiro.RedisSessionDAO">
+        <property name="redisManager" ref="redisManager" />
+        <property name="expire" value="1800"/>
+        <property name="keyPrefix" value="shiro:session:" />
+    </bean>
+
+
+    <!--credentialsMatcher 凭证匹配器-->
+    <bean id="credentialsMatcher" class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+        <!--散列算法-->
+        <property name="hashAlgorithmName" value="md5" />
+        <!--散列次数-->
+        <property name="hashIterations" value="1024"/>
+    </bean>
+
+    <!--自定义的realm-->
+    <bean id="myRealm" class="com.q18idc.ssms.realm.MyRealm">
+        <!--配置凭证匹配器-->
+        <property name="credentialsMatcher" ref="credentialsMatcher" />
+        <property name="cachingEnabled" value="true"/>
+    </bean>
+
+
+    <!-- 自定义form认证过虑器 -->
+    <!-- 基于Form表单的身份验证过滤器，不配置将也会注册此过虑器，表单中的用户账号、密码及loginurl将采用默认值，建议配置 -->
+    <bean id="formAuthenticationFilter"
+          class="com.q18idc.ssms.filter.MyFormAuthenticationFilter">
+        <!-- 表单中账号的input名称 -->
+        <property name="usernameParam" value="username" />
+        <!-- 表单中密码的input名称 -->
+        <property name="passwordParam" value="password" />
+        <!-- 记住我input的名称 -->
+        <property name="rememberMeParam" value="rememberMe"/>
+    </bean>
+
+    <!-- rememberMeManager管理器，写cookie，取出cookie生成用户信息 -->
+    <bean id="rememberMeManager" class="org.apache.shiro.web.mgt.CookieRememberMeManager">
+        <property name="cipherKey" value="#{T(org.apache.shiro.codec.Base64).decode('kPH+bIxk5D2deZiIxcaaaA==')}" />
+        <property name="cookie" ref="rememberMeCookie" />
+    </bean>
+    <!-- 记住我cookie -->
+    <bean id="rememberMeCookie" class="org.apache.shiro.web.servlet.SimpleCookie">
+        <!-- rememberMe是cookie的名字 -->
+        <constructor-arg value="rememberMe" />
+        <!-- 记住我cookie生效时间7天 -->
+        <property name="maxAge" value="604800" />
+    </bean>
+
+</beans>
