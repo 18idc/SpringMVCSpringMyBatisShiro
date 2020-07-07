@@ -33,7 +33,7 @@
         <!--orderby-helper版本-->
         <orderbyhelper.version>0.0.2</orderbyhelper.version>
         <!--mysql驱动版本-->
-        <mysql.version>5.1.45</mysql.version>
+        <mysql.version>8.0.20</mysql.version>
 
     </properties>
 
