@@ -25,7 +25,7 @@
         <!--fastjson 版本号-->
         <fastjson.version>1.2.47</fastjson.version>
         <!--shiro 版本号-->
-        <shiro.version>1.3.2</shiro.version>
+        <shiro.version>1.5.3</shiro.version>
         <!--通用mapper版本-->
         <mapper.version>4.0.2</mapper.version>
         <!--pagehelper版本-->
@@ -44,11 +44,18 @@
 
     <dependencies>
 
+<!--        <dependency>-->
+<!--            <groupId>log4j</groupId>-->
+<!--            <artifactId>log4j</artifactId>-->
+<!--            <version>1.2.17</version>-->
+<!--        </dependency>-->
+        <!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core -->
         <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.17</version>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>2.13.3</version>
         </dependency>
+
 
         <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
         <dependency>
