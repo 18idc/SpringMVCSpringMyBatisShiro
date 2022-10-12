@@ -25,7 +25,7 @@
         <!--fastjson 版本号-->
         <fastjson.version>1.2.47</fastjson.version>
         <!--shiro 版本号-->
-        <shiro.version>1.5.3</shiro.version>
+        <shiro.version>1.10.0</shiro.version>
         <!--通用mapper版本-->
         <mapper.version>4.0.2</mapper.version>
         <!--pagehelper版本-->
